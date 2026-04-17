@@ -1,46 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
-
-/**
- * Lazily initializes the GoogleGenAI client.
- * This function is called only when an API call is needed. It sources the
- * API key from the `import.meta.env.VITE_GEMINI_API_KEY` environment variable.
- * @returns An instance of the GoogleGenAI client.
- * @throws An error if the Gemini key is not configured in the environment.
- */
-const getAiClient = () => {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
-
-    if (!apiKey) {
-        throw new Error("Missing VITE_GEMINI_API_KEY. Set it in your environment before running the app.");
-    }
-    return new GoogleGenAI({ apiKey });
-};
-
-const QUIZ_SCHEMA = {
-  type: Type.ARRAY,
-  items: {
-    type: Type.OBJECT,
-    properties: {
-      question: {
-        type: Type.STRING,
-        description: 'The quiz question.'
-      },
-      options: {
-        type: Type.ARRAY,
-        items: { type: Type.STRING },
-        description: 'An array of 4 multiple-choice options.'
-      },
-      correctAnswer: {
-        type: Type.STRING,
-        description: 'The correct answer from the provided options.'
-      }
-    },
-    required: ['question', 'options', 'correctAnswer']
-  }
-};
-
 const generateQuizAttempt = async (topic, difficulty, numberOfQuestions, fileContent = null) => {
-  const ai = getAiClient(); // Initialize client and check for key here.
   let prompt = '';
 
   if (fileContent) {
@@ -58,16 +16,27 @@ const generateQuizAttempt = async (topic, difficulty, numberOfQuestions, fileCon
     prompt = `Generate a ${numberOfQuestions}-question multiple-choice quiz in JSON format about "${topic}" with a difficulty level of "${difficulty}". For each question, provide 4 options and identify the correct answer.`;
   }
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
-      responseMimeType: 'application/json',
-      responseSchema: QUIZ_SCHEMA,
+  const response = await fetch('/api/generate-quiz', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ prompt }),
   });
 
-  const jsonText = response.text.trim();
+  let responsePayload = {};
+  try {
+    responsePayload = await response.json();
+  } catch {
+    throw new Error('The quiz API returned an invalid JSON response.');
+  }
+
+  if (!response.ok) {
+    const serverError = responsePayload?.error || `Quiz API request failed with status ${response.status}.`;
+    throw new Error(serverError);
+  }
+
+  const jsonText = responsePayload?.text?.trim() || '';
   if (!jsonText) {
     throw new Error("The AI returned an empty response. It might be unable to generate a quiz for the given topic/document.");
   }
@@ -92,8 +61,8 @@ export const generateQuiz = async (topic, difficulty, numberOfQuestions, fileCon
       lastError = error;
       console.error(`Attempt ${attempt} to generate quiz failed:`, error);
       
-      // Do not retry on API key errors, as it's a fatal configuration issue.
-      if (error.message.includes("VITE_GEMINI_API_KEY")) {
+      // Do not retry on key/auth/config errors, as those are fatal.
+      if (error.message.includes("GEMINI_API_KEY") || error.message.includes("401") || error.message.includes("403")) {
           break;
       }
       
@@ -108,8 +77,8 @@ export const generateQuiz = async (topic, difficulty, numberOfQuestions, fileCon
   console.error("All quiz generation attempts failed.", lastError);
   
   if (lastError) {
-      if (lastError.message.includes("VITE_GEMINI_API_KEY")) {
-          throw new Error("The Gemini API key is missing or invalid. Set VITE_GEMINI_API_KEY and try again.");
+      if (lastError.message.includes("GEMINI_API_KEY") || lastError.message.includes('401') || lastError.message.includes('403') || lastError.message.includes('API key not valid')) {
+          throw new Error("The server Gemini API key is missing, leaked, or invalid. Set GEMINI_API_KEY on Vercel (and .env.local for local dev), then redeploy/restart.");
       }
       if (lastError.message.includes('xhr') || lastError.message.includes('500') || lastError.message.includes('fetch')) {
         throw new Error("A network error occurred while generating the quiz. Please check your connection and try again.");
