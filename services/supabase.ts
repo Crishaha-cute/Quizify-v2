@@ -14,8 +14,8 @@ import type { Database } from '../database/types.ts';
 
 // Get environment variables
 // In Vite, environment variables must be prefixed with VITE_ to be exposed to the client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 // Validate that required environment variables are set
 if (!supabaseUrl) {
