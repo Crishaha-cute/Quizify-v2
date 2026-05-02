@@ -207,10 +207,6 @@ const AdminDashboardPage: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-auto">
-            <button className="flex flex-col items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/30 hover:bg-indigo-600/20 hover:border-indigo-500/30 transition-all p-4 text-center group">
-              <svg className="w-6 h-6 text-slate-400 group-hover:text-indigo-400 mb-2 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              <span className="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">New Quiz</span>
-            </button>
             <button className="flex flex-col items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/30 hover:bg-emerald-600/20 hover:border-emerald-500/30 transition-all p-4 text-center group">
               <svg className="w-6 h-6 text-slate-400 group-hover:text-emerald-400 mb-2 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
               <span className="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Manage Users</span>
