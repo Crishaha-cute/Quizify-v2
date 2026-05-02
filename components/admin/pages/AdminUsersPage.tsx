@@ -1,52 +1,63 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../services/supabase.ts';
 import type { Database } from '../../../database/types.ts';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type HistoryRow = Database['public']['Tables']['quiz_history']['Row'];
 
+const PAGE_SIZE = 200;
+
 const AdminUsersPage: React.FC = () => {
-  const pageSize = 200;
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<ProfileRow[]>([]);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const pageRef = useRef(0);
 
-  const loadUsers = useMemo(() => {
-    return async (reset = false) => {
+  const loadUsers = useCallback(async (reset: boolean) => {
+    if (reset) {
       setLoading(true);
-      setError(null);
-      try {
-        const nextPage = reset ? 0 : page;
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('user_id,display_name,is_admin,created_at,updated_at')
-          .order('created_at', { ascending: false })
-          .range(nextPage * pageSize, nextPage * pageSize + pageSize - 1);
-        if (error) throw error;
-        if (reset) {
-          setUsers(data ?? []);
-        } else {
-          setUsers((prev) => [...prev, ...(data ?? [])]);
-        }
-        setHasMore((data?.length ?? 0) === pageSize);
-        setPage(nextPage + 1);
-      } catch (e: any) {
-        setError(e?.message || 'Failed to load users.');
-      } finally {
-        setLoading(false);
-      }
-    };
-  }, [page, pageSize]);
+      setUsers([]);
+      pageRef.current = 0;
+    } else {
+      setLoadingMore(true);
+    }
+    setError(null);
+    try {
+      const nextPage = reset ? 0 : pageRef.current + 1;
+      const start = nextPage * PAGE_SIZE;
+      const end = start + PAGE_SIZE - 1;
+
+      const { data, error, count } = await supabase
+        .from('profiles')
+        .select('user_id,display_name,is_admin,created_at,updated_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(start, end);
+      if (error) throw error;
+
+      const rows = data ?? [];
+      setUsers((prev) => (reset ? rows : [...prev, ...rows]));
+      pageRef.current = nextPage;
+      setTotalCount(count ?? null);
+
+      const loadedCount = start + rows.length;
+      const moreAvailable = rows.length === PAGE_SIZE && (count == null || loadedCount < count);
+      setHasMore(moreAvailable);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load users.');
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
 
   useEffect(() => {
-    setPage(0);
-    setHasMore(true);
     loadUsers(true);
   }, [loadUsers]);
 
@@ -110,11 +121,7 @@ const AdminUsersPage: React.FC = () => {
           <div className="text-2xl font-black">Users & Roles</div>
         </div>
         <button
-          onClick={() => {
-            setPage(0);
-            setHasMore(true);
-            loadUsers(true);
-          }}
+          onClick={() => loadUsers(true)}
           className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 font-semibold transition-colors"
         >
           Refresh
@@ -182,22 +189,20 @@ const AdminUsersPage: React.FC = () => {
             </table>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-xs text-slate-400">
-              Showing {filtered.length} user{filtered.length === 1 ? '' : 's'}
-            </div>
-            {hasMore && !loading && (
+          {!loading && !search && (
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="text-xs text-slate-400">
+                {totalCount == null ? 'Showing loaded users' : `Showing ${users.length} of ${totalCount}`}
+              </div>
               <button
-                onClick={() => loadUsers()}
-                className="rounded-lg border border-slate-800 bg-slate-950/40 hover:bg-slate-900/40 px-3 py-2 text-xs font-semibold"
+                onClick={() => loadUsers(false)}
+                disabled={!hasMore || loadingMore}
+                className="rounded-lg border border-slate-800 bg-slate-950/40 hover:bg-slate-900/40 disabled:opacity-60 px-3 py-2 text-xs font-semibold"
               >
-                Load more
+                {loadingMore ? 'Loading…' : hasMore ? 'Load more' : 'All users loaded'}
               </button>
-            )}
-            {!hasMore && (
-              <div className="text-xs text-slate-500">All users loaded</div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 shadow-xl">
