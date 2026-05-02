@@ -20,14 +20,12 @@ const AdminDashboardPage: React.FC = () => {
   const [stats, setStats] = useState<{
     totalUsers: number;
     totalQuizzes: number;
-    totalQuestions: number;
     quizAttempts: number;
     activeSeasonName: string;
     totalPointsAllTime: number;
   }>({
     totalUsers: 0,
     totalQuizzes: 0,
-    totalQuestions: 0,
     quizAttempts: 0,
     activeSeasonName: '—',
     totalPointsAllTime: 0,
@@ -45,7 +43,6 @@ const AdminDashboardPage: React.FC = () => {
           top10Res,
           usersCountRes,
           quizzesCountRes,
-          questionsCountRes,
           attemptsCountRes,
           seasonRes,
           pointsRes,
@@ -53,7 +50,6 @@ const AdminDashboardPage: React.FC = () => {
           leaderboardService.getTop10CurrentSeason(),
           supabase.from('profiles').select('user_id', { count: 'exact', head: true }),
           supabase.from('quizzes').select('id', { count: 'exact', head: true }),
-          supabase.from('questions').select('id', { count: 'exact', head: true }),
           supabase.from('quiz_history').select('id', { count: 'exact', head: true }),
           supabase.from('seasons').select('name').eq('id', seasonId).maybeSingle(),
           supabase.from('quiz_history').select('points').limit(2000),
@@ -65,7 +61,7 @@ const AdminDashboardPage: React.FC = () => {
         setStats({
           totalUsers: usersCountRes.count ?? 0,
           totalQuizzes: quizzesCountRes.count ?? 0,
-          totalQuestions: questionsCountRes.count ?? 0,
+          // totalQuestions: questionsCountRes.count ?? 0,
           quizAttempts: attemptsCountRes.count ?? 0,
           activeSeasonName: seasonRes.data?.name ?? '—',
           totalPointsAllTime,
@@ -117,7 +113,7 @@ const AdminDashboardPage: React.FC = () => {
         />
         <Card 
           title="Total Questions" 
-          value={stats.totalQuestions.toLocaleString()} 
+          value="N/A" 
           icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         />
         <Card 

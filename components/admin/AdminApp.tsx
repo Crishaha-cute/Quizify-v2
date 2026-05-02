@@ -4,7 +4,6 @@ import * as profileService from '../../services/profileService.ts';
 import AdminLayout from './AdminLayout.tsx';
 import AdminDashboardPage from './pages/AdminDashboardPage.tsx';
 import AdminQuizzesPage from './pages/AdminQuizzesPage.tsx';
-import AdminQuestionsPage from './pages/AdminQuestionsPage.tsx';
 import AdminUsersPage from './pages/AdminUsersPage.tsx';
 import AdminLeaderboardPage from './pages/AdminLeaderboardPage.tsx';
 import AdminSeasonsPage from './pages/AdminSeasonsPage.tsx';
@@ -72,7 +71,6 @@ const AdminApp: React.FC = () => {
     <AdminLayout section={section} onSectionChange={setSection}>
       {section === AdminSection.DASHBOARD && <AdminDashboardPage />}
       {section === AdminSection.QUIZZES && <AdminQuizzesPage />}
-      {section === AdminSection.QUESTIONS && <AdminQuestionsPage />}
       {section === AdminSection.USERS && <AdminUsersPage />}
       {section === AdminSection.LEADERBOARD && <AdminLeaderboardPage />}
       {section === AdminSection.SEASONS && <AdminSeasonsPage />}
