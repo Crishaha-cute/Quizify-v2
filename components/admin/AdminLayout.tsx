@@ -1,7 +1,7 @@
 import React from 'react';
 import { AdminSection } from '../../types.ts';
 
-const nav: { id: AdminSection; label: string }[] = [
+const nav: { id: AdminSection | string; label: string }[] = [
   { id: AdminSection.DASHBOARD, label: 'Dashboard' },
   { id: AdminSection.QUIZZES, label: 'Quiz Management' },
   { id: AdminSection.QUESTIONS, label: 'Questions' },
@@ -10,6 +10,7 @@ const nav: { id: AdminSection; label: string }[] = [
   { id: AdminSection.SEASONS, label: 'Seasons' },
   { id: AdminSection.UPLOADED_FILES, label: 'Uploaded Files' },
   { id: AdminSection.ANALYTICS, label: 'Analytics' },
+  { id: 'Audit', label: 'Audit Log' },
   { id: AdminSection.SETTINGS, label: 'Settings' },
 ];
 

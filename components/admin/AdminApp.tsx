@@ -11,6 +11,7 @@ import AdminSeasonsPage from './pages/AdminSeasonsPage.tsx';
 import AdminUploadedFilesPage from './pages/AdminUploadedFilesPage.tsx';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage.tsx';
 import AdminSettingsPage from './pages/AdminSettingsPage.tsx';
+import AdminAuditPage from './pages/AdminAuditPage.tsx';
 
 const AdminApp: React.FC = () => {
   const [section, setSection] = useState<AdminSection>(AdminSection.DASHBOARD);
@@ -78,6 +79,7 @@ const AdminApp: React.FC = () => {
       {section === AdminSection.UPLOADED_FILES && <AdminUploadedFilesPage />}
       {section === AdminSection.ANALYTICS && <AdminAnalyticsPage />}
       {section === AdminSection.SETTINGS && <AdminSettingsPage onRecheckAdmin={check} />}
+      {section === 'Audit' && <AdminAuditPage />}
     </AdminLayout>
   );
 };
