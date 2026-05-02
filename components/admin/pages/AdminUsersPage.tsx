@@ -6,36 +6,48 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type HistoryRow = Database['public']['Tables']['quiz_history']['Row'];
 
 const AdminUsersPage: React.FC = () => {
+  const pageSize = 200;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<ProfileRow[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const loadUsers = useMemo(() => {
-    return async () => {
+    return async (reset = false) => {
       setLoading(true);
       setError(null);
       try {
+        const nextPage = reset ? 0 : page;
         const { data, error } = await supabase
           .from('profiles')
           .select('user_id,display_name,is_admin,created_at,updated_at')
           .order('created_at', { ascending: false })
-          .limit(500);
+          .range(nextPage * pageSize, nextPage * pageSize + pageSize - 1);
         if (error) throw error;
-        setUsers(data ?? []);
+        if (reset) {
+          setUsers(data ?? []);
+        } else {
+          setUsers((prev) => [...prev, ...(data ?? [])]);
+        }
+        setHasMore((data?.length ?? 0) === pageSize);
+        setPage(nextPage + 1);
       } catch (e: any) {
         setError(e?.message || 'Failed to load users.');
       } finally {
         setLoading(false);
       }
     };
-  }, []);
+  }, [page, pageSize]);
 
   useEffect(() => {
-    loadUsers();
+    setPage(0);
+    setHasMore(true);
+    loadUsers(true);
   }, [loadUsers]);
 
   useEffect(() => {
@@ -98,7 +110,11 @@ const AdminUsersPage: React.FC = () => {
           <div className="text-2xl font-black">Users & Roles</div>
         </div>
         <button
-          onClick={loadUsers}
+          onClick={() => {
+            setPage(0);
+            setHasMore(true);
+            loadUsers(true);
+          }}
           className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 font-semibold transition-colors"
         >
           Refresh
@@ -164,6 +180,23 @@ const AdminUsersPage: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-xs text-slate-400">
+              Showing {filtered.length} user{filtered.length === 1 ? '' : 's'}
+            </div>
+            {hasMore && !loading && (
+              <button
+                onClick={() => loadUsers()}
+                className="rounded-lg border border-slate-800 bg-slate-950/40 hover:bg-slate-900/40 px-3 py-2 text-xs font-semibold"
+              >
+                Load more
+              </button>
+            )}
+            {!hasMore && (
+              <div className="text-xs text-slate-500">All users loaded</div>
+            )}
           </div>
         </div>
 
