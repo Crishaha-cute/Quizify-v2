@@ -79,7 +79,7 @@ const AdminApp: React.FC = () => {
       {section === AdminSection.UPLOADED_FILES && <AdminUploadedFilesPage />}
       {section === AdminSection.ANALYTICS && <AdminAnalyticsPage />}
       {section === AdminSection.SETTINGS && <AdminSettingsPage onRecheckAdmin={check} />}
-      {section === 'Audit' && <AdminAuditPage />}
+      {section === AdminSection.AUDIT_LOG && <AdminAuditPage />}
     </AdminLayout>
   );
 };

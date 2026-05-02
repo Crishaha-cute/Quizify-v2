@@ -96,7 +96,7 @@ const AdminDashboardScreen: React.FC = () => {
 
         setQuizzes(quizRes.data ?? []);
         setUsers(usersRes.data ?? []);
-        setRecentActivity(historyRes.data ?? []);
+        setRecentActivity((historyRes.data as any[]) ?? []);
 
         // Overview/analytics
         const seasonId = await leaderboardService.ensureActiveSeason();
