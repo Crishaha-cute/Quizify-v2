@@ -135,7 +135,7 @@ const AdminDashboardPage: React.FC = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+      <div className="grid grid-cols-1 gap-6 mt-8">
         {/* Leaderboard Table Re-style */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl flex flex-col h-full">
           <div className="border-b border-slate-800/80 px-6 py-5 flex items-center justify-between bg-slate-950/40">
@@ -191,32 +191,6 @@ const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl flex flex-col h-full">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Quick Actions</div>
-              <div className="text-xl font-bold text-white">System Tools</div>
-            </div>
-            <div className="p-2 bg-slate-800/80 rounded-xl text-slate-400">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-auto">
-            <button className="flex flex-col items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/30 hover:bg-emerald-600/20 hover:border-emerald-500/30 transition-all p-4 text-center group">
-              <svg className="w-6 h-6 text-slate-400 group-hover:text-emerald-400 mb-2 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-              <span className="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Manage Users</span>
-            </button>
-            <button className="flex flex-col items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/30 hover:bg-amber-600/20 hover:border-amber-500/30 transition-all p-4 text-center group">
-              <svg className="w-6 h-6 text-slate-400 group-hover:text-amber-400 mb-2 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              <span className="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Audit Logs</span>
-            </button>
-            <button className="flex flex-col items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/30 hover:bg-sky-600/20 hover:border-sky-500/30 transition-all p-4 text-center group">
-              <svg className="w-6 h-6 text-slate-400 group-hover:text-sky-400 mb-2 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-              <span className="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Export Data</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
