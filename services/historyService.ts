@@ -36,10 +36,10 @@ export const getHistory = async (): Promise<QuizHistory[]> => {
       return [];
     }
 
-    // Query quiz_history table for the current user
+    // Query quiz_history table for the current user with their attempts
     const { data, error } = await supabase
       .from('quiz_history')
-      .select('*')
+      .select('*, quiz_attempts(*)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -64,6 +64,13 @@ export const getHistory = async (): Promise<QuizHistory[]> => {
         month: 'long',
         day: 'numeric',
       }),
+      rating: (record as any).rating,
+      answers: (record as any).quiz_attempts?.sort((a: any, b: any) => a.question_number - b.question_number).map((a: any) => ({
+        question: a.question_text,
+        selectedAnswer: a.selected_answer,
+        correctAnswer: a.correct_answer,
+        isCorrect: a.is_correct,
+      })) || [],
     }));
 
     return history;
@@ -80,6 +87,7 @@ export const getHistory = async (): Promise<QuizHistory[]> => {
  * @param difficulty - The difficulty level
  * @param score - The score achieved
  * @param totalQuestions - Total number of questions
+ * @param userAnswers - Array of user answers for each question
  * @throws Error if save fails
  * @param rating - Optional rating (1-5 stars)
  */
@@ -89,6 +97,7 @@ export const saveHistory = async (
   score: number,
   points: number,
   totalQuestions: number,
+  userAnswers: any[] = [],
   rating?: number
 ): Promise<string> => {
   try {
@@ -120,6 +129,26 @@ export const saveHistory = async (
 
     if (!data) {
       throw new Error('Failed to save quiz history. No data returned.');
+    }
+
+    if (userAnswers && userAnswers.length > 0) {
+      const attemptsData = userAnswers.map((answer, index) => ({
+        quiz_history_id: data.id,
+        question_number: index + 1,
+        question_text: answer.question,
+        selected_answer: answer.selectedAnswer,
+        correct_answer: answer.correctAnswer,
+        is_correct: answer.isCorrect,
+      }));
+
+      const { error: attemptsError } = await supabase
+        .from('quiz_attempts')
+        .insert(attemptsData);
+
+      if (attemptsError) {
+        console.error('Error saving quiz attempts:', attemptsError);
+        // We do not fail the whole operation if attempts fail to save
+      }
     }
 
     console.log('Quiz history saved successfully:', data.id);

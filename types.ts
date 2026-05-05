@@ -17,6 +17,7 @@ export interface QuizHistory {
   totalQuestions: number;
   date: string;
   rating?: number;
+  answers?: UserAnswer[];
 }
 
 export interface QuizQuestion {

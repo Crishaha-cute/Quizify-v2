@@ -152,7 +152,7 @@ const App: React.FC = () => {
 
     if (currentQuestionIndex >= quiz.length - 1) {
         if (user && currentQuizConfig) {
-            const savedId = await historyService.saveHistory(currentQuizConfig.topic, currentQuizConfig.difficulty, updatedScore, updatedPoints, quiz.length);
+            const savedId = await historyService.saveHistory(currentQuizConfig.topic, currentQuizConfig.difficulty, updatedScore, updatedPoints, quiz.length, newUserAnswers);
             setCurrentHistoryId(savedId);
             // Update seasonal leaderboard points (only once, at end of quiz)
             try {
