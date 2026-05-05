@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../services/supabase.ts';
 import * as leaderboardService from '../../../services/leaderboardService.ts';
+import { fetchAdminUserCount } from '../../../services/adminUserService.ts';
 import * as activityService from '../../../services/activityService.ts';
 
 interface Activity {
@@ -54,14 +55,14 @@ const AdminDashboardPage: React.FC = () => {
 
         const [
           top10Res,
-          usersCountRes,
+          usersCount,
           quizzesCountRes,
           attemptsCountRes,
           seasonRes,
           pointsRes,
         ] = await Promise.all([
           leaderboardService.getTop10CurrentSeason(),
-          supabase.from('profiles').select('user_id', { count: 'exact', head: true }),
+          fetchAdminUserCount(),
           supabase.from('quizzes').select('id', { count: 'exact', head: true }),
           supabase.from('quiz_history').select('id', { count: 'exact', head: true }),
           supabase.from('seasons').select('name').eq('id', seasonId).maybeSingle(),
@@ -72,7 +73,7 @@ const AdminDashboardPage: React.FC = () => {
 
         setTop10(top10Res);
         setStats({
-          totalUsers: usersCountRes.count ?? 0,
+          totalUsers: usersCount ?? 0,
           totalQuizzes: quizzesCountRes.count ?? 0,
           // totalQuestions: questionsCountRes.count ?? 0,
           quizAttempts: attemptsCountRes.count ?? 0,

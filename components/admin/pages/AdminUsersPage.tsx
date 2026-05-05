@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../services/supabase.ts';
+import { fetchAdminUsers, setAdminRole } from '../../../services/adminUserService.ts';
 import type { Database } from '../../../database/types.ts';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -34,14 +35,7 @@ const AdminUsersPage: React.FC = () => {
       const start = nextPage * PAGE_SIZE;
       const end = start + PAGE_SIZE - 1;
 
-      const { data, error, count } = await supabase
-        .from('profiles')
-        .select('user_id,display_name,is_admin,created_at,updated_at', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(start, end);
-      if (error) throw error;
-
-      const rows = data ?? [];
+      const { data: rows, count } = await fetchAdminUsers(nextPage, PAGE_SIZE);
       setUsers((prev) => (reset ? rows : [...prev, ...rows]));
       pageRef.current = nextPage;
       setTotalCount(count ?? null);
@@ -100,17 +94,12 @@ const AdminUsersPage: React.FC = () => {
     const ok = confirm(`${u.is_admin ? 'Remove admin' : 'Make admin'} for ${u.display_name || u.user_id}?`);
     if (!ok) return;
     setError(null);
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ is_admin: !u.is_admin })
-      .eq('user_id', u.user_id)
-      .select('user_id,display_name,is_admin,created_at,updated_at')
-      .single();
-    if (error) {
-      setError(error.message);
-      return;
+    try {
+      const updated = await setAdminRole(u.user_id, !u.is_admin);
+      setUsers((prev) => prev.map((x) => (x.user_id === u.user_id ? updated : x)));
+    } catch (e: any) {
+      setError(e?.message || 'Failed to update admin role.');
     }
-    setUsers((prev) => prev.map((x) => (x.user_id === u.user_id ? data : x)));
   };
 
   return (
