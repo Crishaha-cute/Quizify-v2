@@ -87,6 +87,7 @@ export interface Database {
           score: number;
           points: number;
           total_questions: number;
+          rating: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -98,6 +99,7 @@ export interface Database {
           score: number;
           points?: number;
           total_questions: number;
+          rating?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -109,6 +111,7 @@ export interface Database {
           score?: number;
           points?: number;
           total_questions?: number;
+          rating?: number | null;
           created_at?: string;
           updated_at?: string;
         };
