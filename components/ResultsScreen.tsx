@@ -94,18 +94,26 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ score, points, totalQuest
   const animatedPoints = useCountUp(points, 1000);
   
   const [rating, setRating] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isRatingSaved, setIsRatingSaved] = useState<boolean>(false);
 
-  const handleRatingChange = async (newRating: number) => {
-      if (isRatingSaved || !historyId) return;
+  const handleRatingChange = (newRating: number) => {
+      if (!isRatingSaved) {
+          setRating(newRating);
+      }
+  };
+
+  const handleSubmitRating = async () => {
+      if (rating === 0 || isRatingSaved || !historyId) return;
       
-      setRating(newRating);
+      setIsSubmitting(true);
       try {
-          await updateHistoryRating(historyId, newRating);
+          await updateHistoryRating(historyId, rating);
           setIsRatingSaved(true);
       } catch (error) {
           console.error('Failed to update rating:', error);
-          setRating(0); // Revert
+      } finally {
+          setIsSubmitting(false);
       }
   };
 
@@ -144,13 +152,24 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ score, points, totalQuest
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                     {isRatingSaved ? 'Thank you for your feedback!' : 'How was your experience?'}
                 </p>
-                <StarRating rating={rating} onChange={handleRatingChange} disabled={isRatingSaved} />
+                <div className="flex flex-col items-center">
+                    <StarRating rating={rating} onChange={handleRatingChange} disabled={isRatingSaved || isSubmitting} />
+                    {!isRatingSaved && rating > 0 && (
+                        <button
+                            onClick={handleSubmitRating}
+                            disabled={isSubmitting}
+                            className="mt-4 px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full font-bold transition-all disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                        </button>
+                    )}
+                </div>
             </div>
         )}
 
         <div className="text-left my-8 flex-1 min-h-0 flex flex-col">
             <h3 className="text-2xl font-semibold mb-4 text-center flex-shrink-0">Review Your Answers</h3>
-            <div className="space-y-4 overflow-y-auto pr-4">
+            <div className="space-y-4 overflow-y-auto pr-4 max-h-[35vh]">
                 {userAnswers.map((answer, index) => (
                     <div key={index} className={`p-4 rounded-lg flex items-start space-x-4 ${answer.isCorrect ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
                         {answer.isCorrect ? (
