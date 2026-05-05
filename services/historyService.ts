@@ -81,14 +81,16 @@ export const getHistory = async (): Promise<QuizHistory[]> => {
  * @param score - The score achieved
  * @param totalQuestions - Total number of questions
  * @throws Error if save fails
+ * @param rating - Optional rating (1-5 stars)
  */
 export const saveHistory = async (
   topic: string,
   difficulty: Difficulty,
   score: number,
   points: number,
-  totalQuestions: number
-): Promise<void> => {
+  totalQuestions: number,
+  rating?: number
+): Promise<string> => {
   try {
     const userId = await getCurrentUserId();
     if (!userId) {
@@ -106,6 +108,7 @@ export const saveHistory = async (
         score,
         points,
         total_questions: totalQuestions,
+        rating,
       })
       .select()
       .single();
@@ -120,6 +123,7 @@ export const saveHistory = async (
     }
 
     console.log('Quiz history saved successfully:', data.id);
+    return data.id;
   } catch (error: any) {
     console.error('Error in saveHistory:', error);
     // Re-throw with user-friendly message
@@ -158,6 +162,42 @@ export const deleteHistory = async (historyId: string): Promise<void> => {
       throw error;
     }
     throw new Error('An unexpected error occurred while deleting quiz history.');
+  }
+};
+
+
+/**
+ * Update the rating for a quiz history entry
+ * @param historyId - The ID of the history entry to update
+ * @param rating - The new rating (1-5)
+ * @throws Error if update fails
+ */
+export const updateHistoryRating = async (historyId: string, rating: number): Promise<void> => {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      throw new Error('You must be logged in to rate a quiz.');
+    }
+    if (rating < 1 || rating > 5) {
+      throw new Error('Rating must be between 1 and 5 stars.');
+    }
+
+    const { error } = await supabase
+      .from('quiz_history')
+      .update({ rating })
+      .eq('id', historyId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error updating quiz rating:', error);
+      throw new Error('Failed to save rating. Please try again.');
+    }
+  } catch (error: any) {
+    console.error('Error in updateHistoryRating:', error);
+    if (error.message) {
+      throw error;
+    }
+    throw new Error('An unexpected error occurred while saving rating.');
   }
 };
 

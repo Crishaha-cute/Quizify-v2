@@ -33,6 +33,7 @@ const App: React.FC = () => {
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -151,7 +152,8 @@ const App: React.FC = () => {
 
     if (currentQuestionIndex >= quiz.length - 1) {
         if (user && currentQuizConfig) {
-            await historyService.saveHistory(currentQuizConfig.topic, currentQuizConfig.difficulty, updatedScore, updatedPoints, quiz.length);
+            const savedId = await historyService.saveHistory(currentQuizConfig.topic, currentQuizConfig.difficulty, updatedScore, updatedPoints, quiz.length);
+            setCurrentHistoryId(savedId);
             // Update seasonal leaderboard points (only once, at end of quiz)
             try {
               await leaderboardService.addPointsForCurrentUser(updatedPoints);
@@ -174,12 +176,14 @@ const App: React.FC = () => {
     setGameState(GameState.SETUP);
     setQuiz([]);
     setCurrentQuizConfig(null);
+    setCurrentHistoryId(null);
   }, []);
 
   const handleQuitQuiz = useCallback(() => {
     setGameState(GameState.SETUP);
     setQuiz([]);
     setCurrentQuizConfig(null);
+    setCurrentHistoryId(null);
   }, []);
 
   const handleLoginSuccess = (loggedInUser: User) => {
@@ -263,6 +267,7 @@ const App: React.FC = () => {
             points={points}
             totalQuestions={quiz.length}
             userAnswers={userAnswers}
+            historyId={currentHistoryId}
             onPlayAgain={handlePlayAgain}
           />
         );
