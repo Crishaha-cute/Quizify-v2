@@ -58,8 +58,6 @@ export enum AdminSection {
   SEASONS = 'Seasons',
   UPLOADED_FILES = 'Uploaded Files',
   ANALYTICS = 'Analytics',
-  AUDIT_LOG = 'Audit Log',
-  SETTINGS = 'Settings',
 }
 
 export enum Difficulty {
