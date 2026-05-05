@@ -1,6 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../services/supabase.ts';
 import * as leaderboardService from '../../../services/leaderboardService.ts';
+import * as activityService from '../../../services/activityService.ts';
+
+interface Activity {
+  id: string;
+  user_id: string;
+  action_type: string;
+  description?: string;
+  created_at: string;
+}
 
 const Card: React.FC<{ title: string; value: string | number; subtitle?: string; icon?: React.ReactNode }> = ({ title, value, subtitle, icon }) => (
   <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-6 shadow-lg transition-all hover:bg-slate-900/80 hover:border-slate-700 hover:shadow-indigo-500/10">
@@ -17,6 +26,10 @@ const Card: React.FC<{ title: string; value: string | number; subtitle?: string;
 const AdminDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activityRange, setActivityRange] = useState<'3days' | '7days' | '30days'>('7days');
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activityStats, setActivityStats] = useState<any>(null);
+  const [loadingActivities, setLoadingActivities] = useState(false);
   const [stats, setStats] = useState<{
     totalUsers: number;
     totalQuizzes: number;
@@ -74,9 +87,66 @@ const AdminDashboardPage: React.FC = () => {
     };
   }, []);
 
+  const loadActivities = useMemo(() => {
+    return async (range: '3days' | '7days' | '30days') => {
+      setLoadingActivities(true);
+      try {
+        const data = await activityService.getActivities(range);
+        const stats = await activityService.getActivityStats(range);
+        setActivities(data);
+        setActivityStats(stats);
+      } catch (e: any) {
+        console.error('Failed to load activities:', e);
+      } finally {
+        setLoadingActivities(false);
+      }
+    };
+  }, []);
+
+  const handleActivityRangeChange = (range: '3days' | '7days' | '30days') => {
+    setActivityRange(range);
+    loadActivities(range);
+  };
+
+  const getActionIcon = (actionType: string) => {
+    switch (actionType) {
+      case 'login':
+        return <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM15.657 14.243a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM11 17a1 1 0 102 0v-1a1 1 0 10-2 0v1zM5.757 15.657a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707zM5 10a1 1 0 01-1-1V8a1 1 0 012 0v1a1 1 0 01-1 1zM5.757 5.757a1 1 0 00-1.414 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707z" /></svg>;
+      case 'logout':
+        return <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 4.5C3 3.119 4.119 2 5.5 2h5a.75.75 0 010 1.5h-5a.25.25 0 00-.25.25v11a.25.25 0 00.25.25h5a.75.75 0 010 1.5h-5A1.5 1.5 0 013 15.5v-11zm6.378.5a.75.75 0 00-1.06 1.061L9.44 9.5H6a.75.75 0 000 1.5h3.44l-1.122 1.439a.75.75 0 101.06 1.061l2.5-3.2a.75.75 0 000-.942l-2.5-3.2z" clipRule="evenodd" /></svg>;
+      case 'quiz_attempt':
+        return <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm11-4a1 1 0 10-2 0v5a1 1 0 102 0V6z" /></svg>;
+      case 'quiz_completion':
+        return <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>;
+      default:
+        return <svg className="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /></svg>;
+    }
+  };
+
+  const getActionLabel = (actionType: string) => {
+    const labels: Record<string, string> = {
+      'login': 'Login',
+      'logout': 'Logout',
+      'quiz_attempt': 'Quiz Attempted',
+      'quiz_completion': 'Quiz Completed',
+    };
+    return labels[actionType] || actionType;
+  };
+
+  const getActionBgColor = (actionType: string) => {
+    switch (actionType) {
+      case 'login': return 'bg-blue-500/10 text-blue-300';
+      case 'logout': return 'bg-red-500/10 text-red-300';
+      case 'quiz_attempt': return 'bg-yellow-500/10 text-yellow-300';
+      case 'quiz_completion': return 'bg-green-500/10 text-green-300';
+      default: return 'bg-slate-500/10 text-slate-300';
+    }
+  };
+
   useEffect(() => {
     load();
-  }, [load]);
+    loadActivities(activityRange);
+  }, [load, loadActivities, activityRange]);
 
   return (
     <div className="space-y-6">
@@ -189,6 +259,110 @@ const AdminDashboardPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* User Activities Section */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl flex flex-col h-full">
+          <div className="border-b border-slate-800/80 px-6 py-5 flex items-center justify-between bg-slate-950/40">
+            <div>
+              <h3 className="text-lg font-bold text-white">User Activity Log</h3>
+              <p className="text-sm text-slate-400 mt-1">
+                {activityStats ? `${activityStats.totalActivities} activities` : 'Loading...'}
+              </p>
+            </div>
+            <div className="p-2 bg-purple-500/10 rounded-xl text-purple-400">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="px-6 py-4 flex gap-2 bg-slate-950/20 border-b border-slate-800/60 flex-wrap">
+            {(['3days', '7days', '30days'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => handleActivityRangeChange(range)}
+                disabled={loadingActivities}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                  activityRange === range
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-slate-700/40 text-slate-300 hover:bg-slate-700/60'
+                } disabled:opacity-50`}
+              >
+                {range === '3days' ? 'Last 3 Days' : range === '7days' ? 'Last 7 Days' : 'Last 30 Days'}
+              </button>
+            ))}
+          </div>
+
+          {/* Activities Table */}
+          <div className="flex-1 overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs uppercase bg-slate-950/60 text-slate-400 font-semibold tracking-wider sticky top-0">
+                <tr>
+                  <th className="px-6 py-4">Action</th>
+                  <th className="px-6 py-4">User ID</th>
+                  <th className="px-6 py-4">Date & Time</th>
+                  <th className="px-6 py-4">Description</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {loadingActivities ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500 bg-slate-900/20 italic">Loading activities...</td>
+                  </tr>
+                ) : activities.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500 bg-slate-900/20 italic">No activities found in this time range.</td>
+                  </tr>
+                ) : (
+                  activities.map((activity) => (
+                    <tr key={activity.id} className="hover:bg-slate-800/40 transition-colors group">
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-medium text-xs ${getActionBgColor(activity.action_type)}`}>
+                          {getActionIcon(activity.action_type)}
+                          {getActionLabel(activity.action_type)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-300 font-mono text-xs truncate max-w-xs">
+                        {activity.user_id}
+                      </td>
+                      <td className="px-6 py-4 text-slate-400 text-xs whitespace-nowrap">
+                        {new Date(activity.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-slate-400 text-xs">
+                        {activity.description || '—'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Stats Summary */}
+          {activityStats && (
+            <div className="border-t border-slate-800/60 px-6 py-4 bg-slate-950/20 grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
+              <div>
+                <div className="text-xs text-slate-400">Logins</div>
+                <div className="text-lg font-bold text-blue-400">{activityStats.logins}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">Attempts</div>
+                <div className="text-lg font-bold text-yellow-400">{activityStats.quizAttempts}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">Completions</div>
+                <div className="text-lg font-bold text-green-400">{activityStats.quizCompletions}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">Logouts</div>
+                <div className="text-lg font-bold text-red-400">{activityStats.logouts}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">Unique Users</div>
+                <div className="text-lg font-bold text-purple-400">{activityStats.uniqueUsers}</div>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>

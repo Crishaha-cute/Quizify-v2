@@ -3,6 +3,7 @@ import { GameState, Difficulty, QuizQuestion, UserAnswer, User, QuizHistory, Qui
 import { generateQuiz } from './services/geminiService.ts';
 import * as authService from './services/authService.ts';
 import * as historyService from './services/historyService.ts';
+import * as activityService from './services/activityService.ts';
 
 import SetupScreen from './components/SetupScreen.tsx';
 import QuizScreen from './components/QuizScreen.tsx';
@@ -114,6 +115,8 @@ const App: React.FC = () => {
       setPoints(0);
       setUserAnswers([]);
       setGameState(GameState.QUIZ);
+      // Log the quiz attempt activity
+      activityService.logActivity('quiz_attempt', `Started ${topic} (${difficulty})`).catch(console.error);
     } catch (err: any) {
       setError(err.message || 'Unknown error.');
       setGameState(GameState.SETUP);
@@ -154,6 +157,8 @@ const App: React.FC = () => {
         if (user && currentQuizConfig) {
             const savedId = await historyService.saveHistory(currentQuizConfig.topic, currentQuizConfig.difficulty, updatedScore, updatedPoints, quiz.length, newUserAnswers);
             setCurrentHistoryId(savedId);
+            // Log the quiz completion activity
+            activityService.logActivity('quiz_completion', `Completed ${currentQuizConfig.topic} (${currentQuizConfig.difficulty}) - Score: ${updatedScore}/${quiz.length}`).catch(console.error);
             // Update seasonal leaderboard points (only once, at end of quiz)
             try {
               await leaderboardService.addPointsForCurrentUser(updatedPoints);
@@ -190,6 +195,8 @@ const App: React.FC = () => {
     setUser(loggedInUser);
     setRegistrationSuccess(false); // Clear success notification on login
     setGameState(GameState.SETUP);
+    // Log the login activity
+    activityService.logActivity('login', `User ${loggedInUser.username} logged in`).catch(console.error);
   };
 
   const handleRegisterSuccess = () => {
@@ -199,6 +206,10 @@ const App: React.FC = () => {
   };
   
   const handleLogout = () => {
+    // Log the logout activity before clearing the user
+    if (user) {
+      activityService.logActivity('logout', `User ${user.username} logged out`).catch(console.error);
+    }
     authService.logout();
     profileService.clearIsAdminCache();
     setUser(null);

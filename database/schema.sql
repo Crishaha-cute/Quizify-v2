@@ -28,6 +28,23 @@ CREATE TABLE IF NOT EXISTS profiles (
 );
 
 -- ============================================
+-- Table: admin_activity_log
+-- Tracks user activities (logins, quiz attempts, completions, etc.)
+-- ============================================
+CREATE TABLE IF NOT EXISTS admin_activity_log (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  action_type TEXT NOT NULL CHECK (action_type IN ('login', 'quiz_attempt', 'quiz_completion', 'logout')),
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create index for faster queries on user_id and created_at
+CREATE INDEX IF NOT EXISTS idx_admin_activity_log_user_id ON admin_activity_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_activity_log_created_at ON admin_activity_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_activity_log_action_type ON admin_activity_log(action_type);
+
+-- ============================================
 -- Table: quiz_history
 -- Stores quiz attempt history for each user
 -- ============================================
@@ -39,6 +56,7 @@ CREATE TABLE IF NOT EXISTS quiz_history (
   score INTEGER NOT NULL CHECK (score >= 0), -- number correct (legacy)
   points INTEGER NOT NULL DEFAULT 0 CHECK (points >= 0),
   total_questions INTEGER NOT NULL CHECK (total_questions > 0),
+  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
