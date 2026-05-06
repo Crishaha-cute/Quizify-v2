@@ -294,8 +294,7 @@ const App: React.FC = () => {
     (gameState === GameState.SETUP ||
       gameState === GameState.PROFILE ||
       gameState === GameState.PROGRESS ||
-      gameState === GameState.LEADERBOARD ||
-      (isAdmin && gameState === GameState.ADMIN_DASHBOARD));
+      gameState === GameState.LEADERBOARD);
   const shouldNotBeVerticallyCentered =
     isAuthScreen ||
     gameState === GameState.SETUP ||
