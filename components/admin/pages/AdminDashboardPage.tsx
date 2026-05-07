@@ -78,11 +78,13 @@ const AdminDashboardPage: React.FC = () => {
     const requestId = ++activityRequestId.current;
     setLoadingActivities(true);
     try {
-      const { activities: data, stats } = await activityService.getActivityBundle(range);
+      const { activities: data } = await activityService.getActivityBundle(range);
+      const filtered = data.filter((activity) => activity.action_type !== 'quiz_attempt');
+      const stats = await activityService.getActivityStats(range, filtered);
       if (requestId !== activityRequestId.current) {
         return;
       }
-      setActivities(data);
+      setActivities(filtered);
       setActivityStats(stats);
     } catch (e: any) {
       if (requestId !== activityRequestId.current) {
@@ -323,31 +325,6 @@ const AdminDashboardPage: React.FC = () => {
             </table>
           </div>
 
-          {/* Stats Summary */}
-          {activityStats && (
-            <div className="border-t border-slate-800/60 px-6 py-4 bg-slate-950/20 grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
-              <div>
-                <div className="text-xs text-slate-400">Logins</div>
-                <div className="text-lg font-bold text-blue-400">{activityStats.logins}</div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-400">Attempts</div>
-                <div className="text-lg font-bold text-yellow-400">{activityStats.quizAttempts}</div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-400">Completions</div>
-                <div className="text-lg font-bold text-green-400">{activityStats.quizCompletions}</div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-400">Logouts</div>
-                <div className="text-lg font-bold text-red-400">{activityStats.logouts}</div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-400">Unique Users</div>
-                <div className="text-lg font-bold text-purple-400">{activityStats.uniqueUsers}</div>
-              </div>
-            </div>
-          )}
         </div>
 
       </div>

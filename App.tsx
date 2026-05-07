@@ -115,8 +115,6 @@ const App: React.FC = () => {
       setPoints(0);
       setUserAnswers([]);
       setGameState(GameState.QUIZ);
-      // Log the quiz attempt activity
-      activityService.logActivity('quiz_attempt', `Started ${topic} (${difficulty})`).catch(console.error);
     } catch (err: any) {
       setError(err.message || 'Unknown error.');
       setGameState(GameState.SETUP);
