@@ -68,15 +68,6 @@ const AdminLayout: React.FC<{
             })}
           </nav>
 
-          <div className="mt-auto p-4 border-t border-slate-800/50">
-            <a
-              href="/"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900/60 hover:bg-slate-800 border border-slate-700/50 px-4 py-3 text-sm font-semibold text-slate-300 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-              Exit to app
-            </a>
-          </div>
         </aside>
 
         {/* Main */}
