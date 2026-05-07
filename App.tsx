@@ -45,24 +45,39 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const redirectAdminIfNeeded = async (): Promise<boolean> => {
+      const admin = await profileService.getIsAdmin();
+      setIsAdmin(admin);
+      if (admin && typeof window !== 'undefined' && window.location.pathname !== '/admin') {
+        window.location.assign('/admin');
+        return true;
+      }
+      return false;
+    };
+
     const checkAuth = async () => {
       // Check for OAuth callback first
       const oauthUser = await authService.handleOAuthCallback();
       if (oauthUser) {
         setUser(oauthUser);
-        setGameState(GameState.SETUP);
+        const redirected = await redirectAdminIfNeeded();
+        if (!redirected) {
+          setGameState(GameState.SETUP);
+        }
         return;
       }
 
       // Otherwise check for existing session
       const currentUser = await authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      setIsAdmin(await profileService.getIsAdmin());
-      setGameState(GameState.SETUP);
-    } else {
-      setGameState(GameState.LOGIN);
-    }
+      if (currentUser) {
+        setUser(currentUser);
+        const redirected = await redirectAdminIfNeeded();
+        if (!redirected) {
+          setGameState(GameState.SETUP);
+        }
+      } else {
+        setGameState(GameState.LOGIN);
+      }
     };
     checkAuth();
 
@@ -70,8 +85,14 @@ const App: React.FC = () => {
     const unsubscribe = authService.onAuthStateChange((user) => {
       if (user) {
         setUser(user);
-        profileService.getIsAdmin().then(setIsAdmin).catch(() => setIsAdmin(false));
-        setGameState(GameState.SETUP);
+        redirectAdminIfNeeded().then((redirected) => {
+          if (!redirected) {
+            setGameState(GameState.SETUP);
+          }
+        }).catch(() => {
+          setIsAdmin(false);
+          setGameState(GameState.SETUP);
+        });
       } else {
         setUser(null);
         setIsAdmin(false);
@@ -192,22 +213,15 @@ const App: React.FC = () => {
   const handleLoginSuccess = async (loggedInUser: User) => {
     setUser(loggedInUser);
     setRegistrationSuccess(false); // Clear success notification on login
-    
-    // Check if user is admin
-    try {
-      const isAdminUser = await profileService.getIsAdmin();
-      if (isAdminUser) {
-        // Redirect to admin dashboard
-        window.location.href = '/admin';
-        return;
-      }
-    } catch (err) {
-      console.error('Failed to check admin status:', err);
-    }
-    
-    setGameState(GameState.SETUP);
     // Log the login activity
     activityService.logActivity('login', `User ${loggedInUser.username} logged in`).catch(console.error);
+    const admin = await profileService.getIsAdmin().catch(() => false);
+    setIsAdmin(admin);
+    if (admin && typeof window !== 'undefined' && window.location.pathname !== '/admin') {
+      window.location.assign('/admin');
+      return;
+    }
+    setGameState(GameState.SETUP);
   };
 
   const handleRegisterSuccess = () => {
