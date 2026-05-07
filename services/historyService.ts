@@ -308,3 +308,30 @@ export const getQuizStats = async (): Promise<{
     return null;
   }
 };
+
+export const getHistoryAttempts = async (historyId: string): Promise<QuizHistory['answers']> => {
+  try {
+    if (!historyId) return [];
+
+    const { data, error } = await supabase
+      .from('quiz_attempts')
+      .select('question_number,question_text,selected_answer,correct_answer,is_correct')
+      .eq('quiz_history_id', historyId)
+      .order('question_number', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching quiz attempts:', error);
+      return [];
+    }
+
+    return (data ?? []).map((a: any) => ({
+      question: a.question_text,
+      selectedAnswer: a.selected_answer,
+      correctAnswer: a.correct_answer,
+      isCorrect: a.is_correct,
+    }));
+  } catch (error) {
+    console.error('Error in getHistoryAttempts:', error);
+    return [];
+  }
+};

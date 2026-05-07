@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, QuizHistory, Difficulty } from '../types.ts';
 import Spinner from './Spinner.tsx';
-import { updateHistoryRating } from '../services/historyService.ts';
+import { getHistoryAttempts, updateHistoryRating } from '../services/historyService.ts';
 
 interface ProfileScreenProps {
   user: User;
@@ -56,6 +56,7 @@ const getDifficultyClass = (difficulty: string) => {
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, history: initialHistory, onLogout, isLoading }) => {
   const [history, setHistory] = useState<QuizHistory[]>(initialHistory);
   const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
+  const [loadingAnswersId, setLoadingAnswersId] = useState<string | null>(null);
 
   // Update local history state when initialHistory prop changes
   React.useEffect(() => {
@@ -76,6 +77,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, history: initialHis
       // Revert on failure (reload from props)
       setHistory(initialHistory);
     }
+  };
+
+  const handleToggleAnswers = async (historyId: string) => {
+    if (expandedQuizId === historyId) {
+      setExpandedQuizId(null);
+      return;
+    }
+
+    setExpandedQuizId(historyId);
+    const target = history.find((item) => item.id === historyId);
+    if (target?.answers && target.answers.length > 0) {
+      return;
+    }
+
+    setLoadingAnswersId(historyId);
+    const answers = await getHistoryAttempts(historyId);
+    setHistory((prev) => prev.map((item) => (
+      item.id === historyId ? { ...item, answers } : item
+    )));
+    setLoadingAnswersId(null);
   };
   return (
     <div className="w-full max-w-3xl mx-auto pt-8 md:pt-12">
@@ -130,40 +151,46 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, history: initialHis
                                     />
                                     {item.answers && item.answers.length > 0 && (
                                         <button
-                                            onClick={() => setExpandedQuizId(expandedQuizId === item.id ? null : item.id)}
-                                            className="text-xs text-purple-600 dark:text-purple-400 hover:underline mt-2 flex items-center"
+                                          onClick={() => handleToggleAnswers(item.id)}
+                                          className="text-xs text-purple-600 dark:text-purple-400 hover:underline mt-2 flex items-center"
                                         >
-                                            {expandedQuizId === item.id ? 'Hide Answers' : 'Review Answers'}
-                                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ml-1 transform transition-transform ${expandedQuizId === item.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
+                                          {expandedQuizId === item.id ? 'Hide Answers' : 'Review Answers'}
+                                          <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ml-1 transform transition-transform ${expandedQuizId === item.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                          </svg>
                                         </button>
-                                    )}
+                                      )}
                                 </div>
                             </div>
                             
-                            {expandedQuizId === item.id && item.answers && (
+                                  {expandedQuizId === item.id && (
                                 <div className="mt-4 pt-4 border-t border-purple-200 dark:border-purple-400/20 space-y-3">
-                                    {item.answers.map((answer, index) => (
-                                        <div key={index} className={`p-3 rounded-lg text-sm flex items-start space-x-3 ${answer.isCorrect ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                                      {loadingAnswersId === item.id ? (
+                                        <div className="text-sm text-purple-600 dark:text-purple-300">Loading answers…</div>
+                                      ) : (item.answers && item.answers.length > 0 ? (
+                                        item.answers.map((answer, index) => (
+                                          <div key={index} className={`p-3 rounded-lg text-sm flex items-start space-x-3 ${answer.isCorrect ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
                                             {answer.isCorrect ? (
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 dark:text-green-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                </svg>
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 dark:text-green-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                              </svg>
                                             ) : (
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                                </svg>
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                              </svg>
                                             )}
                                             <div>
-                                                <p className="font-semibold text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: answer.question }}></p>
-                                                <p className={`mt-1 ${answer.isCorrect ? 'text-green-600 dark:text-green-400' : 'line-through text-red-600 dark:text-red-400'}`} dangerouslySetInnerHTML={{ __html: `Your answer: ${answer.selectedAnswer || 'Not answered'}`}}></p>
-                                                {!answer.isCorrect && (
-                                                    <p className="text-green-600 dark:text-green-400 mt-1" dangerouslySetInnerHTML={{ __html: `Correct answer: ${answer.correctAnswer}`}}></p>
-                                                )}
+                                              <p className="font-semibold text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: answer.question }}></p>
+                                              <p className={`mt-1 ${answer.isCorrect ? 'text-green-600 dark:text-green-400' : 'line-through text-red-600 dark:text-red-400'}`} dangerouslySetInnerHTML={{ __html: `Your answer: ${answer.selectedAnswer || 'Not answered'}`}}></p>
+                                              {!answer.isCorrect && (
+                                                <p className="text-green-600 dark:text-green-400 mt-1" dangerouslySetInnerHTML={{ __html: `Correct answer: ${answer.correctAnswer}`}}></p>
+                                              )}
                                             </div>
-                                        </div>
-                                    ))}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-sm text-slate-400">No answers recorded for this quiz.</div>
+                                      ))}
                                 </div>
                             )}
                         </div>
