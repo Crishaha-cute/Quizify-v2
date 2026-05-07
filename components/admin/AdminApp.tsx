@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AdminSection } from '../../types.ts';
 import * as profileService from '../../services/profileService.ts';
+import * as authService from '../../services/authService.ts';
+import * as activityService from '../../services/activityService.ts';
 import AdminLayout from './AdminLayout.tsx';
 import AdminDashboardPage from './pages/AdminDashboardPage.tsx';
 import AdminQuizzesPage from './pages/AdminQuizzesPage.tsx';
@@ -35,6 +37,15 @@ const AdminApp: React.FC = () => {
     check();
   }, [check]);
 
+  const handleLogout = async () => {
+    activityService.logActivity('logout', 'Admin logged out').catch(() => undefined);
+    await authService.logout();
+    profileService.clearIsAdminCache();
+    if (typeof window !== 'undefined') {
+      window.location.assign('/');
+    }
+  };
+
   if (checking) {
     return (
       <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex items-center justify-center p-6">
@@ -65,7 +76,7 @@ const AdminApp: React.FC = () => {
   }
 
   return (
-    <AdminLayout section={section} onSectionChange={setSection}>
+    <AdminLayout section={section} onSectionChange={setSection} onLogout={handleLogout}>
       {section === AdminSection.DASHBOARD && <AdminDashboardPage />}
       {section === AdminSection.QUIZZES && <AdminQuizzesPage />}
       {section === AdminSection.USERS && <AdminUsersPage />}
