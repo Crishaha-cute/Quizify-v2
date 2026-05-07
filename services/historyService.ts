@@ -309,9 +309,35 @@ export const getQuizStats = async (): Promise<{
   }
 };
 
+const getAccessToken = async (): Promise<string | null> => {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    console.warn('Failed to read Supabase session for quiz attempts:', error);
+    return null;
+  }
+  return data.session?.access_token ?? null;
+};
+
 export const getHistoryAttempts = async (historyId: string): Promise<QuizHistory['answers']> => {
   try {
     if (!historyId) return [];
+
+    try {
+      const token = await getAccessToken();
+      if (token) {
+        const res = await fetch(`/api/quiz-attempts?historyId=${historyId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const body = await res.json().catch(() => ({}));
+        if (res.ok && Array.isArray(body?.attempts)) {
+          return body.attempts;
+        }
+      }
+    } catch (error) {
+      console.warn('Quiz attempts API fetch failed, falling back to Supabase:', error);
+    }
 
     const { data, error } = await supabase
       .from('quiz_attempts')
