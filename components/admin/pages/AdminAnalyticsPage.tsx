@@ -20,17 +20,24 @@ const AdminAnalyticsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mostPlayed, setMostPlayed] = useState<TopicCount[]>([]);
+  const [difficultyFilter, setDifficultyFilter] = useState<string>('All');
 
   const load = useMemo(() => {
     return async () => {
       setLoading(true);
       setError(null);
       try {
-        const { data: history, error: hErr } = await supabase
+        let query = supabase
           .from('quiz_history')
-          .select('topic')
+          .select('topic, difficulty')
           .order('created_at', { ascending: false })
           .limit(2000);
+          
+        if (difficultyFilter !== 'All') {
+          query = query.eq('difficulty', difficultyFilter);
+        }
+        
+        const { data: history, error: hErr } = await query;
         if (hErr) throw hErr;
         
         const topicMap = new Map<string, number>();
@@ -55,7 +62,7 @@ const AdminAnalyticsPage: React.FC = () => {
         setLoading(false);
       }
     };
-  }, []);
+  }, [difficultyFilter]);
 
   useEffect(() => {
     load();
@@ -88,13 +95,25 @@ const AdminAnalyticsPage: React.FC = () => {
       {error && <div className="rounded-2xl border border-red-900/60 bg-red-950/40 p-4 text-red-200">{error}</div>}
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 shadow-xl max-w-4xl">
-        <div className="text-xl font-bold mb-1">Most Played by Topic</div>
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-xl font-bold">Most Played by Topic</div>
+          <select
+            value={difficultyFilter}
+            onChange={(e) => setDifficultyFilter(e.target.value)}
+            className="rounded-lg bg-slate-800 border border-slate-700 text-sm text-slate-200 px-3 py-1.5 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+          >
+            <option value="All">All Difficulties</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
         <div className="text-sm text-slate-400 mb-8">Overall distribution of quiz topics in recent activity</div>
         
         {loading ? (
           <div className="text-slate-300">Loading...</div>
         ) : mostPlayed.length === 0 ? (
-          <div className="text-slate-300">No data available.</div>
+          <div className="text-slate-300">No data available for this difficulty.</div>
         ) : (
           <div className="flex flex-col md:flex-row items-center gap-10">
             {/* Pie Chart */}
@@ -104,11 +123,7 @@ const AdminAnalyticsPage: React.FC = () => {
                 background: `conic-gradient(${gradientStops || 'transparent'})`,
               }}
             >
-              {/* Inner circle for donut styling */}
-              <div className="absolute inset-4 rounded-full bg-slate-900/90 shadow-inner flex items-center justify-center flex-col">
-                <span className="text-3xl font-black">{mostPlayed.reduce((sum, item) => sum + item.count, 0)}</span>
-                <span className="text-xs text-slate-400 mt-1 uppercase tracking-wider">Total</span>
-              </div>
+              {/* Tooltip or simple full pie structure */}
             </div>
 
             {/* Legend */}
