@@ -176,6 +176,7 @@ CREATE TABLE IF NOT EXISTS season_snapshots (
 -- Row Level Security (RLS) Policies
 -- ============================================
 -- Enable RLS on all tables
+ALTER TABLE admin_activity_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
@@ -194,6 +195,24 @@ STABLE
 AS $$
   SELECT COALESCE((SELECT p.is_admin FROM profiles p WHERE p.user_id = auth.uid()), false);
 $$;
+
+-- ============================================
+-- RLS Policies for admin_activity_log
+-- ============================================
+CREATE POLICY "Users can insert their own activity log"
+  ON admin_activity_log
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can view their own activity log"
+  ON admin_activity_log
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can view all activity logs"
+  ON admin_activity_log
+  FOR SELECT
+  USING (is_admin());
 
 -- ============================================
 -- RLS Policies for profiles

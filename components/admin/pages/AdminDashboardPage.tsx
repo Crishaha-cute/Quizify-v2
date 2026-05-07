@@ -3,14 +3,7 @@ import { supabase } from '../../../services/supabase.ts';
 import * as leaderboardService from '../../../services/leaderboardService.ts';
 import { fetchAdminUserCount } from '../../../services/adminUserService.ts';
 import * as activityService from '../../../services/activityService.ts';
-
-interface Activity {
-  id: string;
-  user_id: string;
-  action_type: string;
-  description?: string;
-  created_at: string;
-}
+import type { Activity, ActivityRange, ActivityStats } from '../../../services/activityService.ts';
 
 const Card: React.FC<{ title: string; value: string | number; subtitle?: string; icon?: React.ReactNode }> = ({ title, value, subtitle, icon }) => (
   <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-6 shadow-lg transition-all hover:bg-slate-900/80 hover:border-slate-700 hover:shadow-indigo-500/10">
@@ -27,9 +20,9 @@ const Card: React.FC<{ title: string; value: string | number; subtitle?: string;
 const AdminDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activityRange, setActivityRange] = useState<'3days' | '7days' | '30days'>('7days');
+  const [activityRange, setActivityRange] = useState<ActivityRange>('7days');
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [activityStats, setActivityStats] = useState<any>(null);
+  const [activityStats, setActivityStats] = useState<ActivityStats | null>(null);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const activityRequestId = useRef(0);
   const [stats, setStats] = useState<{
@@ -81,12 +74,11 @@ const AdminDashboardPage: React.FC = () => {
     }
   }, []);
 
-  const loadActivities = useCallback(async (range: '3days' | '7days' | '30days') => {
+  const loadActivities = useCallback(async (range: ActivityRange) => {
     const requestId = ++activityRequestId.current;
     setLoadingActivities(true);
     try {
-      const data = await activityService.getActivities(range);
-      const stats = await activityService.getActivityStats(range, data);
+      const { activities: data, stats } = await activityService.getActivityBundle(range);
       if (requestId !== activityRequestId.current) {
         return;
       }
@@ -104,7 +96,7 @@ const AdminDashboardPage: React.FC = () => {
     }
   }, []);
 
-  const handleActivityRangeChange = (range: '3days' | '7days' | '30days') => {
+  const handleActivityRangeChange = (range: ActivityRange) => {
     setActivityRange(range);
   };
 
