@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../services/supabase.ts';
 
 type TopicCount = { topic: string; count: number; percentage: number };
+type QuestionTypeCount = { type: string; count: number; percentage: number };
 
 const COLORS = [
   '#6366f1', // indigo-500
@@ -20,6 +21,7 @@ const AdminAnalyticsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mostPlayed, setMostPlayed] = useState<TopicCount[]>([]);
+  const [questionTypes, setQuestionTypes] = useState<QuestionTypeCount[]>([]);
   const [difficultyFilter, setDifficultyFilter] = useState<string>('All');
 
   const load = useMemo(() => {
@@ -34,7 +36,8 @@ const AdminAnalyticsPage: React.FC = () => {
           .limit(2000);
           
         if (difficultyFilter !== 'All') {
-          query = query.eq('difficulty', difficultyFilter);
+          // Add 'as any' to bypass the strict TypeScript checking for this variable
+          query = query.eq('difficulty', difficultyFilter as any);
         }
         
         const { data: history, error: hErr } = await query;
@@ -56,6 +59,33 @@ const AdminAnalyticsPage: React.FC = () => {
           .slice(0, 10);
           
         setMostPlayed(topics);
+
+        // Fetch question types
+        const { data: questionsData, error: qErr } = await supabase
+          .from('questions')
+          .select('question_type');
+
+        if (qErr) throw qErr;
+
+        const typeMap = new Map<string, number>();
+        let totalQuestions = 0;
+        for (const q of questionsData ?? []) {
+          const type = q.question_type as string;
+          if (type) {
+            typeMap.set(type, (typeMap.get(type) ?? 0) + 1);
+            totalQuestions++;
+          }
+        }
+
+        const typeStats = Array.from(typeMap.entries())
+          .map(([type, count]) => ({ 
+            type, 
+            count, 
+            percentage: totalQuestions > 0 ? count / totalQuestions : 0 
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        setQuestionTypes(typeStats);
       } catch (e: any) {
         setError(e?.message || 'Failed to load analytics.');
       } finally {
@@ -95,25 +125,13 @@ const AdminAnalyticsPage: React.FC = () => {
       {error && <div className="rounded-2xl border border-red-900/60 bg-red-950/40 p-4 text-red-200">{error}</div>}
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 shadow-xl max-w-4xl">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-xl font-bold">Most Played by Topic</div>
-          <select
-            value={difficultyFilter}
-            onChange={(e) => setDifficultyFilter(e.target.value)}
-            className="rounded-lg bg-slate-800 border border-slate-700 text-sm text-slate-200 px-3 py-1.5 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
-          >
-            <option value="All">All Difficulties</option>
-            <option value="Easy">Easy</option>
-            <option value="Medium">Medium</option>
-            <option value="Hard">Hard</option>
-          </select>
-        </div>
+        <div className="text-xl font-bold mb-1">Most Played by Topic</div>
         <div className="text-sm text-slate-400 mb-8">Overall distribution of quiz topics in recent activity</div>
         
         {loading ? (
           <div className="text-slate-300">Loading...</div>
         ) : mostPlayed.length === 0 ? (
-          <div className="text-slate-300">No data available for this difficulty.</div>
+          <div className="text-slate-300">No data available.</div>
         ) : (
           <div className="flex flex-col md:flex-row items-center gap-10">
             {/* Pie Chart */}
@@ -123,7 +141,11 @@ const AdminAnalyticsPage: React.FC = () => {
                 background: `conic-gradient(${gradientStops || 'transparent'})`,
               }}
             >
-              {/* Tooltip or simple full pie structure */}
+              {/* Inner circle for donut styling */}
+              <div className="absolute inset-4 rounded-full bg-slate-900/90 shadow-inner flex items-center justify-center flex-col">
+                <span className="text-3xl font-black">{mostPlayed.reduce((sum, item) => sum + item.count, 0)}</span>
+                <span className="text-xs text-slate-400 mt-1 uppercase tracking-wider">Total</span>
+              </div>
             </div>
 
             {/* Legend */}
@@ -149,6 +171,52 @@ const AdminAnalyticsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Question Types Column Graph */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 shadow-xl max-w-4xl">
+        <div className="text-xl font-bold mb-1">Question Types Overview</div>
+        <div className="text-sm text-slate-400 mb-8">Distribution of various question formats in the database</div>
+        
+        {loading ? (
+          <div className="text-slate-300">Loading...</div>
+        ) : questionTypes.length === 0 ? (
+          <div className="text-slate-300">No data available.</div>
+        ) : (
+          <div className="mt-6 flex flex-col justify-end">
+            {/* Graph Area */}
+            <div className="flex items-end justify-around h-56 border-b border-slate-700/50 pb-2 gap-4">
+              {questionTypes.map((item, i) => (
+                <div key={item.type} className="flex flex-col items-center justify-end h-full w-full max-w-[120px] group">
+                  {/* Tooltip / Value display */}
+                  <div className="mb-2 flex flex-col items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="text-sm font-bold text-slate-100">{item.count}</span>
+                    <span className="text-[10px] text-slate-400">{Math.round(item.percentage * 100)}%</span>
+                  </div>
+                  
+                  {/* Column Bar */}
+                  <div 
+                    className="w-full rounded-t-md shadow-[0_0_15px_rgba(0,0,0,0.2)] transition-all duration-500 cursor-pointer"
+                    style={{
+                      height: `${Math.max(item.percentage * 100, 2)}%`, // Minimum 2% height for visibility
+                      backgroundColor: COLORS[i % COLORS.length]
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            
+            {/* X-Axis Labels */}
+            <div className="flex justify-around mt-4 gap-4">
+              {questionTypes.map((item) => (
+                <div key={`label-${item.type}`} className="w-full max-w-[120px] text-center">
+                  <span className="text-xs font-medium text-slate-300 break-words">{item.type}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 };
