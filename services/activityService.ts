@@ -11,6 +11,19 @@ export interface Activity {
   created_at: string;
 }
 
+const getRangeInDays = (range: '3days' | '7days' | '30days') => {
+  if (range === '3days') return 3;
+  if (range === '7days') return 7;
+  return 30;
+};
+
+const getRangeStartDate = (range: '3days' | '7days' | '30days') => {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (getRangeInDays(range) - 1));
+  return start;
+};
+
 /**
  * Get the current user's ID from Supabase Auth
  * @returns User ID (UUID) if authenticated, null otherwise
@@ -68,15 +81,14 @@ export const logActivity = async (
  */
 export const getActivities = async (range: '3days' | '7days' | '30days' = '7days'): Promise<Activity[]> => {
   try {
-    // Calculate the date based on range
-    const now = new Date();
-    const rangeInDays = range === '3days' ? 3 : range === '7days' ? 7 : 30;
-    const startDate = new Date(now.getTime() - rangeInDays * 24 * 60 * 60 * 1000);
+    const startDate = getRangeStartDate(range);
+    const endDate = new Date();
 
     const { data, error } = await supabase
       .from('admin_activity_log')
       .select('*')
       .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString())
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -109,9 +121,12 @@ export const getActivities = async (range: '3days' | '7days' | '30days' = '7days
  * @param range - Time range: '3days', '7days', or '30days'
  * @returns Statistics about activities
  */
-export const getActivityStats = async (range: '3days' | '7days' | '30days' = '7days') => {
+export const getActivityStats = async (
+  range: '3days' | '7days' | '30days' = '7days',
+  preloadedActivities?: Activity[]
+) => {
   try {
-    const activities = await getActivities(range);
+    const activities = preloadedActivities ?? await getActivities(range);
     
     const stats = {
       totalActivities: activities.length,

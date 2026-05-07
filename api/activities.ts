@@ -31,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
 
     const activities = await getActivities(range as '3days' | '7days' | '30days');
-    const stats = await getActivityStats(range as '3days' | '7days' | '30days');
+    const stats = await getActivityStats(range as '3days' | '7days' | '30days', activities);
 
     res.status(200).json({
       success: true,

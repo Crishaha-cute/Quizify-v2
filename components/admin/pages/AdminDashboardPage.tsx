@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../services/supabase.ts';
 import * as leaderboardService from '../../../services/leaderboardService.ts';
 import { fetchAdminUserCount } from '../../../services/adminUserService.ts';
@@ -31,6 +31,7 @@ const AdminDashboardPage: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activityStats, setActivityStats] = useState<any>(null);
   const [loadingActivities, setLoadingActivities] = useState(false);
+  const activityRequestId = useRef(0);
   const [stats, setStats] = useState<{
     totalUsers: number;
     quizAttempts: number;
@@ -44,63 +45,67 @@ const AdminDashboardPage: React.FC = () => {
   });
   const [top10, setTop10] = useState<leaderboardService.LeaderboardRow[]>([]);
 
-  const load = useMemo(() => {
-    return async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const seasonId = await leaderboardService.ensureActiveSeason();
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const seasonId = await leaderboardService.ensureActiveSeason();
 
-        const [
-          top10Res,
-          usersCount,
-          attemptsCountRes,
-          seasonRes,
-          pointsRes,
-        ] = await Promise.all([
-          leaderboardService.getTop10CurrentSeason(),
-          fetchAdminUserCount(),
-          supabase.from('quiz_history').select('id', { count: 'exact', head: true }),
-          supabase.from('seasons').select('name').eq('id', seasonId).maybeSingle(),
-          supabase.from('quiz_history').select('points').limit(2000),
-        ]);
+      const [
+        top10Res,
+        usersCount,
+        attemptsCountRes,
+        seasonRes,
+        pointsRes,
+      ] = await Promise.all([
+        leaderboardService.getTop10CurrentSeason(),
+        fetchAdminUserCount(),
+        supabase.from('quiz_history').select('id', { count: 'exact', head: true }),
+        supabase.from('seasons').select('name').eq('id', seasonId).maybeSingle(),
+        supabase.from('quiz_history').select('points').limit(2000),
+      ]);
 
-        const totalPointsAllTime = (pointsRes.data ?? []).reduce((sum, r: any) => sum + (r.points ?? 0), 0);
+      const totalPointsAllTime = (pointsRes.data ?? []).reduce((sum, r: any) => sum + (r.points ?? 0), 0);
 
-        setTop10(top10Res);
-        setStats({
-          totalUsers: usersCount ?? 0,
-          quizAttempts: attemptsCountRes.count ?? 0,
-          activeSeasonName: seasonRes.data?.name ?? '—',
-          totalPointsAllTime,
-        });
-      } catch (e: any) {
-        setError(e?.message || 'Failed to load dashboard.');
-      } finally {
-        setLoading(false);
-      }
-    };
+      setTop10(top10Res);
+      setStats({
+        totalUsers: usersCount ?? 0,
+        quizAttempts: attemptsCountRes.count ?? 0,
+        activeSeasonName: seasonRes.data?.name ?? '—',
+        totalPointsAllTime,
+      });
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load dashboard.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const loadActivities = useMemo(() => {
-    return async (range: '3days' | '7days' | '30days') => {
-      setLoadingActivities(true);
-      try {
-        const data = await activityService.getActivities(range);
-        const stats = await activityService.getActivityStats(range);
-        setActivities(data);
-        setActivityStats(stats);
-      } catch (e: any) {
-        console.error('Failed to load activities:', e);
-      } finally {
+  const loadActivities = useCallback(async (range: '3days' | '7days' | '30days') => {
+    const requestId = ++activityRequestId.current;
+    setLoadingActivities(true);
+    try {
+      const data = await activityService.getActivities(range);
+      const stats = await activityService.getActivityStats(range, data);
+      if (requestId !== activityRequestId.current) {
+        return;
+      }
+      setActivities(data);
+      setActivityStats(stats);
+    } catch (e: any) {
+      if (requestId !== activityRequestId.current) {
+        return;
+      }
+      console.error('Failed to load activities:', e);
+    } finally {
+      if (requestId === activityRequestId.current) {
         setLoadingActivities(false);
       }
-    };
+    }
   }, []);
 
   const handleActivityRangeChange = (range: '3days' | '7days' | '30days') => {
     setActivityRange(range);
-    loadActivities(range);
   };
 
   const getActionIcon = (actionType: string) => {
@@ -140,8 +145,11 @@ const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  useEffect(() => {
     loadActivities(activityRange);
-  }, [load, loadActivities, activityRange]);
+  }, [loadActivities, activityRange]);
 
   return (
     <div className="space-y-6">
