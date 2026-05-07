@@ -125,7 +125,19 @@ const AdminAnalyticsPage: React.FC = () => {
       {error && <div className="rounded-2xl border border-red-900/60 bg-red-950/40 p-4 text-red-200">{error}</div>}
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 shadow-xl max-w-4xl">
-        <div className="text-xl font-bold mb-1">Most Played by Topic</div>
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-xl font-bold">Most Played by Topic</div>
+          <select
+            value={difficultyFilter}
+            onChange={(e) => setDifficultyFilter(e.target.value)}
+            className="rounded-lg bg-slate-800 border border-slate-700 text-sm text-slate-200 px-3 py-1.5 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+          >
+            <option value="All">All Difficulties</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
         <div className="text-sm text-slate-400 mb-8">Overall distribution of quiz topics in recent activity</div>
         
         {loading ? (
@@ -165,51 +177,6 @@ const AdminAnalyticsPage: React.FC = () => {
                     <div className="font-bold text-slate-100">{item.count}</div>
                     <div className="text-xs text-slate-500">{Math.round(item.percentage * 100)}%</div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Question Types Column Graph */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 shadow-xl max-w-4xl">
-        <div className="text-xl font-bold mb-1">Question Types Overview</div>
-        <div className="text-sm text-slate-400 mb-8">Distribution of various question formats in the database</div>
-        
-        {loading ? (
-          <div className="text-slate-300">Loading...</div>
-        ) : questionTypes.length === 0 ? (
-          <div className="text-slate-300">No data available.</div>
-        ) : (
-          <div className="mt-6 flex flex-col justify-end">
-            {/* Graph Area */}
-            <div className="flex items-end justify-around h-56 border-b border-slate-700/50 pb-2 gap-4">
-              {questionTypes.map((item, i) => (
-                <div key={item.type} className="flex flex-col items-center justify-end h-full w-full max-w-[120px] group">
-                  {/* Tooltip / Value display */}
-                  <div className="mb-2 flex flex-col items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="text-sm font-bold text-slate-100">{item.count}</span>
-                    <span className="text-[10px] text-slate-400">{Math.round(item.percentage * 100)}%</span>
-                  </div>
-                  
-                  {/* Column Bar */}
-                  <div 
-                    className="w-full rounded-t-md shadow-[0_0_15px_rgba(0,0,0,0.2)] transition-all duration-500 cursor-pointer"
-                    style={{
-                      height: `${Math.max(item.percentage * 100, 2)}%`, // Minimum 2% height for visibility
-                      backgroundColor: COLORS[i % COLORS.length]
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-            
-            {/* X-Axis Labels */}
-            <div className="flex justify-around mt-4 gap-4">
-              {questionTypes.map((item) => (
-                <div key={`label-${item.type}`} className="w-full max-w-[120px] text-center">
-                  <span className="text-xs font-medium text-slate-300 break-words">{item.type}</span>
                 </div>
               ))}
             </div>
