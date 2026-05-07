@@ -189,9 +189,22 @@ const App: React.FC = () => {
     setCurrentHistoryId(null);
   }, []);
 
-  const handleLoginSuccess = (loggedInUser: User) => {
+  const handleLoginSuccess = async (loggedInUser: User) => {
     setUser(loggedInUser);
     setRegistrationSuccess(false); // Clear success notification on login
+    
+    // Check if user is admin
+    try {
+      const isAdminUser = await profileService.getIsAdmin();
+      if (isAdminUser) {
+        // Redirect to admin dashboard
+        window.location.href = '/admin';
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to check admin status:', err);
+    }
+    
     setGameState(GameState.SETUP);
     // Log the login activity
     activityService.logActivity('login', `User ${loggedInUser.username} logged in`).catch(console.error);

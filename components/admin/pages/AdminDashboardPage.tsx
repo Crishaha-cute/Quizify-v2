@@ -155,8 +155,8 @@ const AdminDashboardPage: React.FC = () => {
 
       <div className="flex items-center justify-between gap-4">
         <div>
-          <div className="text-sm text-slate-400">Overview</div>
-          <div className="text-2xl font-black">System snapshot</div>
+          <div className="text-sm text-slate-400"></div>
+          <div className="text-2xl font-black">System Overview</div>
         </div>
         <button
           onClick={load}
