@@ -36,44 +36,62 @@ export const getHistory = async (): Promise<QuizHistory[]> => {
       return [];
     }
 
-    // Query quiz_history table for the current user with their attempts
-    const { data, error } = await supabase
+    const { data: historyRows, error: historyError } = await supabase
       .from('quiz_history')
-      .select('*, quiz_attempts(*)')
+      .select('id,topic,difficulty,score,points,total_questions,created_at,rating')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching quiz history:', error);
+    if (historyError) {
+      console.error('Error fetching quiz history:', historyError);
       throw new Error('Failed to retrieve quiz history. Please try again.');
     }
 
-    if (!data) {
+    if (!historyRows || historyRows.length === 0) {
       return [];
     }
 
-    // Convert database records to QuizHistory format
-    const history: QuizHistory[] = data.map((record) => ({
-      id: record.id,
-      topic: record.topic,
-      difficulty: record.difficulty,
-      score: record.score,
-      totalQuestions: record.total_questions,
-      date: new Date(record.created_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-      rating: (record as any).rating,
-      answers: (record as any).quiz_attempts?.sort((a: any, b: any) => a.question_number - b.question_number).map((a: any) => ({
-        question: a.question_text,
-        selectedAnswer: a.selected_answer,
-        correctAnswer: a.correct_answer,
-        isCorrect: a.is_correct,
-      })) || [],
-    }));
+    const historyIds = historyRows.map((record) => record.id);
+    const attemptsByHistoryId = new Map<string, any[]>();
 
-    return history;
+    const { data: attemptsRows, error: attemptsError } = await supabase
+      .from('quiz_attempts')
+      .select('quiz_history_id,question_number,question_text,selected_answer,correct_answer,is_correct')
+      .in('quiz_history_id', historyIds)
+      .order('question_number', { ascending: true });
+
+    if (attemptsError) {
+      console.warn('Quiz attempts fetch failed; continuing without answers:', attemptsError);
+    } else if (attemptsRows) {
+      for (const row of attemptsRows) {
+        const bucket = attemptsByHistoryId.get(row.quiz_history_id) ?? [];
+        bucket.push(row);
+        attemptsByHistoryId.set(row.quiz_history_id, bucket);
+      }
+    }
+
+    return historyRows.map((record) => {
+      const attempts = attemptsByHistoryId.get(record.id) ?? [];
+      return {
+        id: record.id,
+        topic: record.topic,
+        difficulty: record.difficulty,
+        score: record.score,
+        totalQuestions: record.total_questions,
+        date: new Date(record.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        rating: record.rating ?? undefined,
+        answers: attempts.map((a: any) => ({
+          question: a.question_text,
+          selectedAnswer: a.selected_answer,
+          correctAnswer: a.correct_answer,
+          isCorrect: a.is_correct,
+        })),
+      } as QuizHistory;
+    });
   } catch (error: any) {
     console.error('Error in getHistory:', error);
     // Return empty array on error to prevent app crash
