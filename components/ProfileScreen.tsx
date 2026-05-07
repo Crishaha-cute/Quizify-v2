@@ -149,17 +149,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, history: initialHis
                                       rating={item.rating} 
                                       onChange={(rating) => handleRatingChange(item.id, rating)} 
                                     />
-                                    {item.answers && item.answers.length > 0 && (
-                                        <button
-                                          onClick={() => handleToggleAnswers(item.id)}
-                                          className="text-xs text-purple-600 dark:text-purple-400 hover:underline mt-2 flex items-center"
-                                        >
-                                          {expandedQuizId === item.id ? 'Hide Answers' : 'Review Answers'}
-                                          <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ml-1 transform transition-transform ${expandedQuizId === item.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                          </svg>
-                                        </button>
-                                      )}
+                                    <button
+                                      onClick={() => handleToggleAnswers(item.id)}
+                                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline mt-2 flex items-center"
+                                    >
+                                      {expandedQuizId === item.id ? 'Hide Answers' : 'Review Answers'}
+                                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ml-1 transform transition-transform ${expandedQuizId === item.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                      </svg>
+                                    </button>
                                 </div>
                             </div>
                             
