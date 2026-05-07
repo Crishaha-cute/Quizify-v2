@@ -48,8 +48,9 @@ const App: React.FC = () => {
     const redirectAdminIfNeeded = async (): Promise<boolean> => {
       const admin = await profileService.getIsAdmin();
       setIsAdmin(admin);
-      if (admin && typeof window !== 'undefined' && window.location.pathname !== '/admin') {
-        window.location.assign('/admin');
+      const isAdminRoute = typeof window !== 'undefined' && window.location.pathname === '/admin';
+      if (admin && !isAdminRoute) {
+        setGameState(GameState.ADMIN_DASHBOARD);
         return true;
       }
       return false;
@@ -217,8 +218,9 @@ const App: React.FC = () => {
     activityService.logActivity('login', `User ${loggedInUser.username} logged in`).catch(console.error);
     const admin = await profileService.getIsAdmin().catch(() => false);
     setIsAdmin(admin);
-    if (admin && typeof window !== 'undefined' && window.location.pathname !== '/admin') {
-      window.location.assign('/admin');
+    const isAdminRoute = typeof window !== 'undefined' && window.location.pathname === '/admin';
+    if (admin && !isAdminRoute) {
+      setGameState(GameState.ADMIN_DASHBOARD);
       return;
     }
     setGameState(GameState.SETUP);
