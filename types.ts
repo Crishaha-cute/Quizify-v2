@@ -56,7 +56,6 @@ export enum AdminSection {
   USERS = 'Users',
   LEADERBOARD = 'Leaderboard',
   SEASONS = 'Seasons',
-  UPLOADED_FILES = 'Uploaded Files',
   ANALYTICS = 'Analytics',
 }
 

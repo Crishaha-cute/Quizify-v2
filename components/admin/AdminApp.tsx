@@ -7,7 +7,6 @@ import AdminQuizzesPage from './pages/AdminQuizzesPage.tsx';
 import AdminUsersPage from './pages/AdminUsersPage.tsx';
 import AdminLeaderboardPage from './pages/AdminLeaderboardPage.tsx';
 import AdminSeasonsPage from './pages/AdminSeasonsPage.tsx';
-import AdminUploadedFilesPage from './pages/AdminUploadedFilesPage.tsx';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage.tsx';
 
 const AdminApp: React.FC = () => {
@@ -72,7 +71,6 @@ const AdminApp: React.FC = () => {
       {section === AdminSection.USERS && <AdminUsersPage />}
       {section === AdminSection.LEADERBOARD && <AdminLeaderboardPage />}
       {section === AdminSection.SEASONS && <AdminSeasonsPage />}
-      {section === AdminSection.UPLOADED_FILES && <AdminUploadedFilesPage />}
       {section === AdminSection.ANALYTICS && <AdminAnalyticsPage />}
     </AdminLayout>
   );
